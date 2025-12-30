@@ -42,7 +42,7 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-8">
-          Pastebin Lite
+          Scriptbin
         </h1>
         
         <form onSubmit={handleSubmit} className="space-y-6 bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl p-8 shadow-2xl">

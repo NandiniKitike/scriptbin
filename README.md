@@ -1,4 +1,4 @@
-# Pastebin Lite
+# Scriptbin
 
 A simple pastebin application that allows users to create and share text snippets with optional expiry times and view limits.
 
