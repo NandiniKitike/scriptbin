@@ -37,7 +37,7 @@ This application uses **MongoDB** as its persistence layer. MongoDB was chosen b
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
-cd pastebin-lite
+cd scriptbin
 ```
 
 2. Install dependencies:
