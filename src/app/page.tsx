@@ -9,34 +9,43 @@ export default function Home() {
   const [result, setResult] = useState<{ id?: string; url?: string; error?: string } | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setResult(null);
+  e.preventDefault();
+  
+  if (!content.trim()) return;
+  
+  setLoading(true);
+  setResult(null);
 
-    try {
-      const response = await fetch('/api/pastes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          ttl_seconds: ttlSeconds ? parseInt(ttlSeconds) : undefined,
-          max_views: maxViews ? parseInt(maxViews) : undefined,
-        }),
-      });
+  // Optimistic UI - show success immediately
+  const optimisticId = Math.random().toString(36).substring(2, 15);
+  setResult({ id: optimisticId, url: `/p/${optimisticId}` });
+  
+  try {
+    const response = await fetch('/api/pastes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        ttl_seconds: ttlSeconds ? parseInt(ttlSeconds) : undefined,
+        max_views: maxViews ? parseInt(maxViews) : undefined,
+      }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (response.ok) {
-        setResult({ id: data.id, url: data.url });
-      } else {
-        setResult({ error: data.error });
-      }
-    } catch {
-      setResult({ error: 'Failed to create paste' });
-    } finally {
-      setLoading(false);
+    if (response.ok) {
+      // Update with real ID/URL
+      setResult({ id: data.id, url: data.url });
+    } else {
+      setResult({ error: data.error });
     }
-  };
+  } catch {
+    setResult({ error: 'Failed to create paste' });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/20 to-slate-900 p-8">
@@ -93,29 +102,27 @@ export default function Home() {
         </form>
 
         {result && (
-          <div className="mt-8 p-8 rounded-2xl border-2 transition-all duration-300 animate-in">
-            {result.error ? (
-              <div className="text-red-400 text-lg font-medium bg-red-900/30 border border-red-800/50 p-6 rounded-xl">
-                 Error: {result.error}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-green-400 text-2xl font-bold">Paste Created!</div>
-                <div className="text-sm text-slate-400 bg-slate-900/50 p-4 rounded-lg">
-                  ID: <code className="font-mono bg-slate-800 px-2 py-1 rounded text-blue-400">{result.id}</code>
-                </div>
-                <a
-                  href={result.url!}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-8 rounded-xl text-lg text-center shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200"
-                >
-                   Open Shareable Paste
-                </a>
-              </div>
-            )}
-          </div>
-        )}
+  <div className="mt-8 p-8 rounded-2xl border-2 transition-all duration-300 animate-in">
+    {result.error ? (
+      <div className="text-red-400 text-lg font-medium bg-red-900/30 border border-red-800/50 p-6 rounded-xl">
+         Error: {result.error}
+      </div>
+    ) : (
+      <div className="space-y-4">
+        <div className="text-green-400 text-2xl font-bold">Paste Created!</div>
+        <div className="text-sm text-slate-400 bg-slate-900/50 p-4 rounded-lg">
+          ID: <code className="font-mono bg-slate-800 px-2 py-1 rounded text-blue-400">{result.id}</code>
+        </div>
+        <a
+          href={result.url!}
+          className="block w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-4 px-8 rounded-xl text-lg text-center shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-200"
+        >
+           Open Shareable Paste
+        </a>
+      </div>
+    )}
+  </div>
+)}
       </div>
     </main>
   );

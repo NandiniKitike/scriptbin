@@ -86,9 +86,7 @@ export async function POST(req: NextRequest) {
     const host = req.headers.get('host') || 'localhost:3000';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
-    
-    console.log(baseUrl, "===============baseUrl================")
-    const url = `${baseUrl}/p/${paste.id}`;
+        const url = `${baseUrl}/p/${paste.id}`;
 
     return NextResponse.json(
       { id: paste.id, url },
