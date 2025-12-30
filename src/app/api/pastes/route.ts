@@ -1,44 +1,109 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB, Paste } from '@/lib/mongoose';
-import { v4 as uuidv4 } from 'uuid';
+import { randomBytes } from 'crypto';
+
+function generateId(): string {
+  return randomBytes(4).toString('hex');
+}
 
 export async function POST(req: NextRequest) {
-  console.log('🔄 Creating paste...');
-  
   try {
     await connectDB();
-    const body = await req.json();
-    const { content, ttl_seconds, max_views } = body;
-
-    console.log('📥 Received:', { content: content?.slice(0, 50), ttl_seconds, max_views });
-
-    // Validation
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return NextResponse.json({ error: 'Content required' }, { status: 400 });
+    
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    const id = uuidv4().slice(0, 8);
-    const pasteData = {
+    const { content, ttl_seconds, max_views } = body;
+
+    // Validate content
+    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'content is required and must be a non-empty string' },
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Validate ttl_seconds
+    if (ttl_seconds !== undefined && ttl_seconds !== null) {
+      if (!Number.isInteger(ttl_seconds) || ttl_seconds < 1) {
+        return NextResponse.json(
+          { error: 'ttl_seconds must be an integer >= 1' },
+          { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // Validate max_views
+    if (max_views !== undefined && max_views !== null) {
+      if (!Number.isInteger(max_views) || max_views < 1) {
+        return NextResponse.json(
+          { error: 'max_views must be an integer >= 1' },
+          { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
+    }
+
+    // Generate unique ID
+    const id = generateId();
+    
+    // Calculate expiry
+    const expiresAt = ttl_seconds 
+      ? new Date(Date.now() + ttl_seconds * 1000) 
+      : null;
+
+    // Create paste
+    const paste = await Paste.create({
       id,
-      content: content.trim(),
+      content,
       ttlSeconds: ttl_seconds || null,
       maxViews: max_views || null,
       viewCount: 0,
-      expiresAt: ttl_seconds ? new Date(Date.now() + ttl_seconds * 1000) : null,
-    };
-
-    console.log('💾 Saving:', pasteData);
-
-    const paste = await Paste.create(pasteData);
-    console.log('✅ SAVED:', paste.id);
-
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-    return NextResponse.json({
-      id: paste.id,
-      url: `${baseUrl}/p/${paste.id}`,
+      expiresAt,
+      createdAt: new Date()
     });
-  } catch (error: any) {
-    console.error('💥 ERROR:', error.message);
-    return NextResponse.json({ error: error.message || 'Failed to create paste' }, { status: 500 });
+
+    // Build URL
+    const host = req.headers.get('host') || 'localhost:3000';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+    const url = `${baseUrl}/p/${paste.id}`;
+
+    return NextResponse.json(
+      { id: paste.id, url },
+      { 
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+
+  } catch (error) {
+    console.error('Error creating paste:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }
